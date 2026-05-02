@@ -1,0 +1,6 @@
+@PharmaMicro.UserIdentityService_HostAddress = http://localhost:5232
+
+GET {{PharmaMicro.UserIdentityService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
