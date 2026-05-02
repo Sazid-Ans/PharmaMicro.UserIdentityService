@@ -1,6 +1,6 @@
 ﻿using PharmaMicro.UserIdentityService.Models;
 
-namespace PharmaMicro.UserIdentityService.Services
+namespace PharmaMicro.UserIdentityService.Services.Interface
 {
     public interface ITokenService
     {

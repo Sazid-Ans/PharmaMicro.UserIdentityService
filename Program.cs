@@ -7,6 +7,7 @@ using System.Text;
 using PharmaMicro.UserIdentityService.Data;
 using PharmaMicro.UserIdentityService.Models;
 using PharmaMicro.UserIdentityService.Services;
+using PharmaMicro.UserIdentityService.Services.Interface;
 
 var builder = WebApplication.CreateBuilder(args);
 
