@@ -88,11 +88,16 @@ namespace PharmaMicro.UserIdentityService.Services
                         Email = user.Email
                     };
                 }
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = "User registration failed: " + result.Errors.FirstOrDefault()
+                };
             }
             return new AuthResponse
             {
                 IsSuccess = false,
-                Message = "User registration failed"
+                Message = "Email already exists"
             };
         }
 
