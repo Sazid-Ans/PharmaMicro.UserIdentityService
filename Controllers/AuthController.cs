@@ -26,5 +26,16 @@ namespace PharmaMicro.UserIdentityService.Controllers
             }
             return Ok(response);
         }
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest registerRequest)
+        {
+            var response = await _authService.RegisterAsync(registerRequest);
+
+            if (!response.IsSuccess)
+            {
+                return BadRequest(response);
+            }
+            return Ok(response);
+        }
     }
 }

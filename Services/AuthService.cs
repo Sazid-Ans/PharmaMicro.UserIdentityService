@@ -137,7 +137,7 @@ namespace PharmaMicro.UserIdentityService.Services
                 return new AuthResponse
                 {
                     IsSuccess = false,
-                    Message = "User registration failed: " + result.Errors.FirstOrDefault()
+                    Message = "User registration failed: " + string.Join(", ", result.Errors.Select(e => e.Description))
                 };
             }
             return new AuthResponse
