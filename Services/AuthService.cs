@@ -23,12 +23,44 @@ namespace PharmaMicro.UserIdentityService.Services
             throw new NotImplementedException();
         }
 
-        public Task<string?> LoginAsync(LoginRequest request)
+        public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
-            throw new NotImplementedException();
+            if(request.Email == null || request.Password == null) 
+            {
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = "Email and password are required"
+                };
+            }
+            var user = _userManager.Users.Where(u => u.Email == request.Email).FirstOrDefault();
+            if (user == null)
+            {
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = "User not found, please register first"
+                };
+            }
+            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
+            if (!result.Succeeded)
+            {
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = "Invalid email or password"
+                };
+            }
+            return new AuthResponse
+            {
+                IsSuccess = true,
+                Message = "Login successful",
+                Token = "",
+                Email = user.Email
+            };
         }
 
-        public Task<bool> RegisterAsync(RegisterRequest request)
+        public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
             if(!_userManager.Users.Any(u => u.Email == request.Email))
             {
@@ -40,18 +72,28 @@ namespace PharmaMicro.UserIdentityService.Services
                     Email = request.Email,
                     FullName = request.FullName
                 };
-                var result = _userManager.CreateAsync(user, request.Password).Result;
+                var result = await _userManager.CreateAsync(user, request.Password);
                 if (result.Succeeded)
                 {
                     if (!_roleManager.Roles.Any(r => r.Name == request.Role))
                     {
-                        _roleManager.CreateAsync(new IdentityRole(request.Role)).Wait();
+                        await _roleManager.CreateAsync(new IdentityRole(request.Role));
                     }
-                    _userManager.AddToRoleAsync(user, request.Role).Wait();
-                    return Task.FromResult(true);
+                    await _userManager.AddToRoleAsync(user, request.Role);
+                    return new AuthResponse
+                    {
+                        IsSuccess = true,
+                        Message = "User registered successfully",
+                        Token = "",
+                        Email = user.Email
+                    };
                 }
             }
-            return Task.FromResult(false);
+            return new AuthResponse
+            {
+                IsSuccess = false,
+                Message = "User registration failed"
+            };
         }
 
         private string CreateUserID(string role)
