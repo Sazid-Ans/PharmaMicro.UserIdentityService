@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 using PharmaMicro.UserIdentityService.Models;
 using PharmaMicro.UserIdentityService.Models.Enums;
 using PharmaMicro.UserIdentityService.Services.Interface;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 
 namespace PharmaMicro.UserIdentityService.Services
 {
@@ -11,11 +14,13 @@ namespace PharmaMicro.UserIdentityService.Services
         public UserManager<ApplicationUser> _userManager;
         public SignInManager<ApplicationUser> _signInManager;
         public RoleManager<IdentityRole> _roleManager;
-        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager)
+        private readonly IConfiguration _configuration;
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
+            _configuration = configuration;
         }
 
         public Task AddClaimsAsync(string userId, IEnumerable<Claim> claims)
@@ -25,7 +30,7 @@ namespace PharmaMicro.UserIdentityService.Services
 
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
-            if(request.Email == null || request.Password == null) 
+            if(string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password)) 
             {
                 return new AuthResponse
                 {
@@ -33,7 +38,9 @@ namespace PharmaMicro.UserIdentityService.Services
                     Message = "Email and password are required"
                 };
             }
-            var user = _userManager.Users.Where(u => u.Email == request.Email).FirstOrDefault();
+
+            //var user = _userManager.Users.Where(u => u.Email == request.Email).FirstOrDefault();
+            var user = await _userManager.FindByEmailAsync(request.Email);
             if (user == null)
             {
                 return new AuthResponse
@@ -42,6 +49,7 @@ namespace PharmaMicro.UserIdentityService.Services
                     Message = "User not found, please register first"
                 };
             }
+
             var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
             if (!result.Succeeded)
             {
@@ -51,15 +59,53 @@ namespace PharmaMicro.UserIdentityService.Services
                     Message = "Invalid email or password"
                 };
             }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = GenerateJwtToken(user, roles.ToList());
+
             return new AuthResponse
             {
                 IsSuccess = true,
                 Message = "Login successful",
-                Token = "",
-                Email = user.Email
+                Token = token,
+                Email = user.Email!,
             };
         }
 
+        private string GenerateJwtToken(ApplicationUser user, List<string> list)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserId),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                new Claim("UserId", user.UserId ?? string.Empty),
+                new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString())
+            };
+
+            // Define key and signing credentials
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            // Generate token with issuer, audience, and expiration
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(30),
+                signingCredentials: credentials);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        /// <summary>
+        /// RegisterAsync first checks whether a user with the same email already exists.
+        /// If the email is not already present, it generates a role-based user id.
+        /// After successful user creation, it checks whether the requested role already exists in the role table, creates if needed and then adds the user to that role.
+        /// Finally it returns true for success and false otherwise.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
             if(!_userManager.Users.Any(u => u.Email == request.Email))
