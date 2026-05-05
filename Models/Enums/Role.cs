@@ -2,9 +2,9 @@
 {
     public enum Role
     {
-        Pharmacist,
-        Admin,
-        Manager,
-        Patient
+        PHARMACIST,
+        ADMIN,
+        MANAGER,
+        PATIENT
     }
 }

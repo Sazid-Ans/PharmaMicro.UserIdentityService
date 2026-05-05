@@ -89,13 +89,13 @@ namespace PharmaMicro.UserIdentityService.Services
             _logger.LogInformation("Registration started for {request.Email} with Role {request.Role}.", request.Email, request.Role);
             if (!_userManager.Users.Any(u => u.Email == request.Email))
             {
-                var userID = CreateUserID(request.Role);
+                var userID = CreateUserID(request.Role.Trim().ToUpper());
                 var user = new ApplicationUser
                 {
                     UserName = request.Email,
                     UserId = userID,
                     Email = request.Email,
-                    FullName = request.FullName
+                    FullName = request.FirstName + " " + request.LastName,
                 };
                 var result = await _userManager.CreateAsync(user, request.Password);
                 if (result.Succeeded)
@@ -135,19 +135,19 @@ namespace PharmaMicro.UserIdentityService.Services
 
             switch (role)
             {
-                case nameof(Role.Pharmacist):
+                case nameof(Role.PHARMACIST):
                     prefix = "PHARM";
                     break;
 
-                case nameof(Role.Admin):
+                case nameof(Role.ADMIN):
                     prefix = "ADM";
                     break;
 
-                case nameof(Role.Manager):
+                case nameof(Role.MANAGER):
                     prefix = "MNGR";
                     break;
 
-                case nameof(Role.Patient):
+                case nameof(Role.PATIENT):
                     prefix = "PAT";
                     break;
 

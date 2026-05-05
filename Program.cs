@@ -8,16 +8,28 @@ using PharmaMicro.UserIdentityService.Data;
 using PharmaMicro.UserIdentityService.Models;
 using PharmaMicro.UserIdentityService.Services;
 using PharmaMicro.UserIdentityService.Services.Interface;
+using FluentValidation;
+using Microsoft.AspNetCore.Components.Forms.Mapping;
+using Microsoft.AspNetCore.Components;
+using PharmaMicro.UserIdentityService.Validators;
+using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<BaseValidationFilter>();
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AuthDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationClientsideAdapters();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDbContext>()
