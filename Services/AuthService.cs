@@ -15,12 +15,16 @@ namespace PharmaMicro.UserIdentityService.Services
         public SignInManager<ApplicationUser> _signInManager;
         public RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
-        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+        private readonly ITokenService _tokenService;
+        private readonly ILogger<AuthService> _logger;
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, ITokenService tokenService, ILogger<AuthService> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
             _configuration = configuration;
+            _tokenService = tokenService;
+            _logger = logger;
         }
 
         public Task AddClaimsAsync(string userId, IEnumerable<Claim> claims)
@@ -61,7 +65,7 @@ namespace PharmaMicro.UserIdentityService.Services
             }
 
             var roles = await _userManager.GetRolesAsync(user);
-            var token = GenerateJwtToken(user, roles.ToList());
+            var token = _tokenService.GenerateJwtToken(user, roles.ToList());
 
             return new AuthResponse
             {
@@ -70,32 +74,6 @@ namespace PharmaMicro.UserIdentityService.Services
                 Token = token,
                 Email = user.Email!,
             };
-        }
-
-        private string GenerateJwtToken(ApplicationUser user, List<string> list)
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId),
-                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-                new Claim("UserId", user.UserId ?? string.Empty),
-                new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
-                new Claim(JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString())
-            };
-
-            // Define key and signing credentials
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            // Generate token with issuer, audience, and expiration
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddMinutes(30),
-                signingCredentials: credentials);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         /// <summary>
@@ -108,7 +86,8 @@ namespace PharmaMicro.UserIdentityService.Services
         /// <returns></returns>
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
-            if(!_userManager.Users.Any(u => u.Email == request.Email))
+            _logger.LogInformation("Registration started for {request.Email} with Role {request.Role}.", request.Email, request.Role);
+            if (!_userManager.Users.Any(u => u.Email == request.Email))
             {
                 var userID = CreateUserID(request.Role);
                 var user = new ApplicationUser
@@ -126,6 +105,7 @@ namespace PharmaMicro.UserIdentityService.Services
                         await _roleManager.CreateAsync(new IdentityRole(request.Role));
                     }
                     await _userManager.AddToRoleAsync(user, request.Role);
+                    _logger.LogInformation("Registration successful for {request.Email} with Role {request.Role}.", request.Email, request.Role);
                     return new AuthResponse
                     {
                         IsSuccess = true,
@@ -134,12 +114,14 @@ namespace PharmaMicro.UserIdentityService.Services
                         Email = user.Email
                     };
                 }
+                _logger.LogInformation("Registration failed for {request.Email} with Role {request.Role}.", request.Email, request.Role);
                 return new AuthResponse
                 {
                     IsSuccess = false,
                     Message = "User registration failed: " + string.Join(", ", result.Errors.Select(e => e.Description))
                 };
             }
+            _logger.LogInformation("Registration failed because {request.Email} already exists.", request.Email);
             return new AuthResponse
             {
                 IsSuccess = false,

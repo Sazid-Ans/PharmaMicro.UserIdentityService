@@ -26,6 +26,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+builder.Logging.AddLog4Net("log4net.config");
+
 //builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //.AddJwtBearer(jwtOptions =>
 //{

@@ -21,7 +21,7 @@ namespace PharmaMicro.UserIdentityService.Services
             _configuration = configuration;
             _userManager = userManager;
         }
-        public async Task<string> GenerateTokenAsync(ApplicationUser user)
+        /*public async Task<string> GenerateTokenAsync(ApplicationUser user)
         {
             var roles = await _userManager.GetRolesAsync(user);
             var claims = new List<Claim>
@@ -39,6 +39,32 @@ namespace PharmaMicro.UserIdentityService.Services
             var token = new JwtSecurityToken(issuer: _configuration["Jwt:Issuer"], audience: _configuration["Jwt:Audience"],
                 claims:claims, expires:DateTime.UtcNow.AddHours(1),
                 signingCredentials:credentials);
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }*/
+
+        public string GenerateJwtToken(ApplicationUser user, List<string> list)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserId),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                new Claim("UserId", user.UserId ?? string.Empty),
+                new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString())
+            };
+
+            // Define key and signing credentials
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            // Generate token with issuer, audience, and expiration
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(30),
+                signingCredentials: credentials);
+
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
