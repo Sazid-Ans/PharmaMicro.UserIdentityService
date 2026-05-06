@@ -10,5 +10,13 @@ namespace PharmaMicro.UserIdentityService.Models
     {
         public string FullName { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
+        public virtual Pharmacy Pharmacy { get; set; }
+        /*public Guid PharmacyId { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime? CreatedOn {  get; set; }
+        public DateTime? LastLogin { get;set; }*/
     }
 }
