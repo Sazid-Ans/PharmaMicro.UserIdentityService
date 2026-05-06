@@ -1,18 +1,19 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms.Mapping;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using PharmaMicro.UserIdentityService.Data;
 using PharmaMicro.UserIdentityService.Models;
 using PharmaMicro.UserIdentityService.Services;
 using PharmaMicro.UserIdentityService.Services.Interface;
-using FluentValidation;
-using Microsoft.AspNetCore.Components.Forms.Mapping;
-using Microsoft.AspNetCore.Components;
 using PharmaMicro.UserIdentityService.Validators;
-using FluentValidation.AspNetCore;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,11 @@ builder.Services.AddControllers(options =>
 {
     options.Filters.Add<BaseValidationFilter>();
 });
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AuthDbContext>(options =>

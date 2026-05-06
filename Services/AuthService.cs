@@ -71,8 +71,7 @@ namespace PharmaMicro.UserIdentityService.Services
             {
                 IsSuccess = true,
                 Message = "Login successful",
-                Token = token,
-                Email = user.Email!,
+                Token = token
             };
         }
 
@@ -111,7 +110,6 @@ namespace PharmaMicro.UserIdentityService.Services
                         IsSuccess = true,
                         Message = "User registered successfully",
                         Token = "",
-                        Email = user.Email
                     };
                 }
                 _logger.LogInformation("Registration failed for {request.Email} with Role {request.Role}.", request.Email, request.Role);

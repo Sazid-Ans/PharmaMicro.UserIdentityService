@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using PharmaMicro.UserIdentityService.Models;
 
 namespace PharmaMicro.UserIdentityService.Validators
 {
@@ -11,12 +13,9 @@ namespace PharmaMicro.UserIdentityService.Validators
             {
                 var errors = context.ModelState
                     .Where(x => x.Value.Errors.Any())
-                    .ToDictionary(
-                        k => k.Key,
-                        v => v.Value.Errors.Select(e => e.ErrorMessage)
-                    );
+                    .ToDictionary(x=>x.Key, x => x.Value.Errors.Select(x=>x.ErrorMessage).ToList());
 
-                context.Result = new BadRequestObjectResult(errors);
+                context.Result = new JsonResult(new { message = "one or more validation error occured", errors = errors }) { StatusCode = StatusCodes.Status400BadRequest };
                 return;
             }
 
