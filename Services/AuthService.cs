@@ -32,48 +32,72 @@ namespace PharmaMicro.UserIdentityService.Services
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Authenticates a user by validating the provided email and password. It returns a JWT token and user details on success.
+        /// The login request contain user email and password.
+        /// The response contains token and email if successful.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
-            if(string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password)) 
+            try
             {
+                _logger.LogInformation("Login started for {request.Email}.", request.Email);
+                if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+                {
+                    _logger.LogInformation("Email and password are required.");
+                    return new AuthResponse
+                    {
+                        IsSuccess = false,
+                        Message = "Email and password are required."
+                    };
+                }
+
+                //var user = _userManager.Users.Where(u => u.Email == request.Email).FirstOrDefault();
+                var user = await _userManager.FindByEmailAsync(request.Email);
+                if (user == null)
+                {
+                    _logger.LogInformation("User not found, please register first.");
+                    return new AuthResponse
+                    {
+                        IsSuccess = false,
+                        Message = "User not found, please register first."
+                    };
+                }
+
+                var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
+                if (!result.Succeeded)
+                {
+                    _logger.LogInformation("Invalid email or password.");
+                    return new AuthResponse
+                    {
+                        IsSuccess = false,
+                        Message = "Invalid email or password."
+                    };
+                }
+
+                var roles = await _userManager.GetRolesAsync(user);
+                var token = _tokenService.GenerateJwtToken(user, roles.ToList());
+
+                _logger.LogInformation("Login successful.");
+                return new AuthResponse
+                {
+                    IsSuccess = true,
+                    Message = "Login successful.",
+                    Token = token,
+                    Email = user.Email!,
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("An error occurred while processing login.");
                 return new AuthResponse
                 {
                     IsSuccess = false,
-                    Message = "Email and password are required"
+                    Message = "An error occurred while processing login.",
                 };
             }
-
-            //var user = _userManager.Users.Where(u => u.Email == request.Email).FirstOrDefault();
-            var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null)
-            {
-                return new AuthResponse
-                {
-                    IsSuccess = false,
-                    Message = "User not found, please register first"
-                };
-            }
-
-            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
-            if (!result.Succeeded)
-            {
-                return new AuthResponse
-                {
-                    IsSuccess = false,
-                    Message = "Invalid email or password"
-                };
-            }
-
-            var roles = await _userManager.GetRolesAsync(user);
-            var token = _tokenService.GenerateJwtToken(user, roles.ToList());
-
-            return new AuthResponse
-            {
-                IsSuccess = true,
-                Message = "Login successful",
-                Token = token,
-                Email = user.Email!,
-            };
         }
 
         /// <summary>
@@ -86,49 +110,70 @@ namespace PharmaMicro.UserIdentityService.Services
         /// <returns></returns>
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
-            _logger.LogInformation("Registration started for {request.Email} with Role {request.Role}.", request.Email, request.Role);
-            if (!_userManager.Users.Any(u => u.Email == request.Email))
+            try
             {
-                var userID = CreateUserID(request.Role.Trim().ToUpper());
-                var user = new ApplicationUser
+                _logger.LogInformation("Registration started for {request.Email} with Role {request.Role}.", request.Email, request.Role);
+                if (!_userManager.Users.Any(u => u.Email == request.Email))
                 {
-                    UserName = request.Email,
-                    UserId = userID,
-                    Email = request.Email,
-                    FullName = request.FirstName + " " + request.LastName,
-                };
-                var result = await _userManager.CreateAsync(user, request.Password);
-                if (result.Succeeded)
-                {
-                    if (!_roleManager.Roles.Any(r => r.Name == request.Role))
+                    var userID = CreateUserID(request.Role.Trim().ToUpper());
+                    var user = new ApplicationUser
                     {
-                        await _roleManager.CreateAsync(new IdentityRole(request.Role));
+                        UserName = request.Email,
+                        UserId = userID,
+                        Email = request.Email,
+                        FullName = request.FirstName + " " + request.LastName,
+                    };
+                    var result = await _userManager.CreateAsync(user, request.Password);
+                    if (result.Succeeded)
+                    {
+                        if (!_roleManager.Roles.Any(r => r.Name == request.Role))
+                        {
+                            await _roleManager.CreateAsync(new IdentityRole(request.Role));
+                        }
+                        await _userManager.AddToRoleAsync(user, request.Role);
+                        _logger.LogInformation("Registration successful for {request.Email} with Role {request.Role}.", request.Email, request.Role);
+                        return new AuthResponse
+                        {
+                            IsSuccess = true,
+                            Message = "User registered successfully",
+                            Token = "",
+                            Email = user.Email
+                        };
                     }
-                    await _userManager.AddToRoleAsync(user, request.Role);
-                    _logger.LogInformation("Registration successful for {request.Email} with Role {request.Role}.", request.Email, request.Role);
+                    _logger.LogInformation("Registration failed for {request.Email} with Role {request.Role}.", request.Email, request.Role);
                     return new AuthResponse
                     {
-                        IsSuccess = true,
-                        Message = "User registered successfully",
-                        Token = "",
-                        Email = user.Email
+                        IsSuccess = false,
+                        Message = "User registration failed: " + string.Join(", ", result.Errors.Select(e => e.Description))
                     };
                 }
-                _logger.LogInformation("Registration failed for {request.Email} with Role {request.Role}.", request.Email, request.Role);
+                _logger.LogInformation("Registration failed because {request.Email} already exists.", request.Email);
                 return new AuthResponse
                 {
                     IsSuccess = false,
-                    Message = "User registration failed: " + string.Join(", ", result.Errors.Select(e => e.Description))
+                    Message = "Email already exists"
                 };
             }
-            _logger.LogInformation("Registration failed because {request.Email} already exists.", request.Email);
-            return new AuthResponse
+            catch (Exception ex)
             {
-                IsSuccess = false,
-                Message = "Email already exists"
-            };
+                _logger.LogInformation("An error occurred while registering.");
+                return new AuthResponse
+                {
+                    IsSuccess = false,
+                    Message = "An error occurred while registering."
+                };
+            }
         }
 
+        /// <summary>
+        /// Generates the next role specific user id using the appropriate prefix and sequential number.
+        /// Returns an error message if the role is invalid.
+        /// Input is the role used to determine the user id prefix and sequence.
+        /// Returns a role specific user id.
+        /// </summary>
+        /// <param name="role"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         private string CreateUserID(string role)
         {
             string prefix;
@@ -154,7 +199,7 @@ namespace PharmaMicro.UserIdentityService.Services
                 default:
                     throw new ArgumentException("Invalid role");
             }
-            int nextNumber = _userManager.Users.Count() + 1;
+            int nextNumber = _userManager.Users.Count(u => u.UserId!=null && u.UserId.StartsWith(prefix)) + 1;
             return $"{prefix}{nextNumber}";
         }
     }
