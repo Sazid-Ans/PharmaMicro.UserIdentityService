@@ -1,4 +1,4 @@
-﻿using PharmaMicro.UserIdentityService.Models;
+﻿using PharmaMicro.UserIdentityService.Models.Users;
 
 namespace PharmaMicro.UserIdentityService.Services.Interface
 {

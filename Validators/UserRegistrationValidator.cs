@@ -2,12 +2,12 @@
 using FluentValidation.Validators;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.IdentityModel.Tokens;
-using PharmaMicro.UserIdentityService.Models;
 using PharmaMicro.UserIdentityService.Models.Enums;
+using PharmaMicro.UserIdentityService.Models.Users;
 
 namespace PharmaMicro.UserIdentityService.Validators
 {
-    public class UserRegistrationValidator : AbstractValidator<RegisterRequest>
+    public class UserRegistrationValidator : AbstractValidator<UserRegisterRequest>
     {
         public UserRegistrationValidator()
         {
@@ -35,16 +35,6 @@ namespace PharmaMicro.UserIdentityService.Validators
                  .Must(IsLastNameValid)
                  .WithMessage("LastName should not have Special characters or numbers");
 
-            RuleFor(x => x.Role)
-                .Must(IsRoleValid)
-                .WithMessage("Please enter a valid role");
-        }
-
-        private bool IsRoleValid(string arg)
-        {
-            var newVal = arg.Trim().ToUpper();
-            return !string.IsNullOrWhiteSpace(newVal)
-                   && Enum.IsDefined(typeof(Role), newVal);
         }
 
         private bool IsFirstNameValid(string arg)

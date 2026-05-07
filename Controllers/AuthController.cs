@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using PharmaMicro.UserIdentityService.Models;
+using PharmaMicro.UserIdentityService.Models.Users;
 using PharmaMicro.UserIdentityService.Services.Interface;
 
 namespace PharmaMicro.UserIdentityService.Controllers
@@ -16,7 +16,7 @@ namespace PharmaMicro.UserIdentityService.Controllers
             _authService = authService;
         }
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest loginRequest)
+        public async Task<IActionResult> Login([FromBody] UserLoginRequest loginRequest)
         {
             var response = await _authService.LoginAsync(loginRequest);
 
@@ -27,7 +27,7 @@ namespace PharmaMicro.UserIdentityService.Controllers
             return Ok(response);
         }
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest registerRequest)
+        public async Task<IActionResult> Register([FromBody] UserRegisterRequest registerRequest)
         {
             var response = await _authService.RegisterAsync(registerRequest);
 

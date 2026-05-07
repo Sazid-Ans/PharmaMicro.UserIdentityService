@@ -1,10 +1,10 @@
 ﻿namespace PharmaMicro.UserIdentityService.Models.Enums
 {
-    public enum Role
+    public enum PharmacyRole
     {
         PHARMACIST,
         ADMIN,
         MANAGER,
-        PATIENT
+        DOCTOR
     }
 }

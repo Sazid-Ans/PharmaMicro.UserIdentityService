@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.Tokens;
 using PharmaMicro.UserIdentityService.Models;
 using PharmaMicro.UserIdentityService.Models.Enums;
+using PharmaMicro.UserIdentityService.Models.Users;
 using PharmaMicro.UserIdentityService.Services.Interface;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -39,7 +40,7 @@ namespace PharmaMicro.UserIdentityService.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<AuthResponse> LoginAsync(LoginRequest request)
+        public async Task<AuthResponse> LoginAsync(UserLoginRequest request)
         {
             try
             {
@@ -107,14 +108,14 @@ namespace PharmaMicro.UserIdentityService.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
+        public async Task<AuthResponse> RegisterAsync(UserRegisterRequest request)
         {
             try
             {
-                _logger.LogInformation("Registration started for {request.Email} with Role {request.Role}.", request.Email, request.Role);
+                _logger.LogInformation("Registration started for {request.Email}", request.Email);
                 if (!_userManager.Users.Any(u => u.Email == request.Email))
                 {
-                    var userID = CreateUserID(request.Role.Trim().ToUpper());
+                    var userID = CreateUserID();
                     var user = new ApplicationUser
                     {
                         UserName = request.Email,
@@ -125,12 +126,8 @@ namespace PharmaMicro.UserIdentityService.Services
                     var result = await _userManager.CreateAsync(user, request.Password);
                     if (result.Succeeded)
                     {
-                        if (!_roleManager.Roles.Any(r => r.Name == request.Role))
-                        {
-                            await _roleManager.CreateAsync(new IdentityRole(request.Role));
-                        }
-                        await _userManager.AddToRoleAsync(user, request.Role);
-                        _logger.LogInformation("Registration successful for {request.Email} with Role {request.Role}.", request.Email, request.Role);
+                        await _userManager.AddToRoleAsync(user, "PAT");
+                        _logger.LogInformation("Registration successful for {request.Email}.", request.Email);
                         return new AuthResponse
                         {
                             IsSuccess = true,
@@ -138,7 +135,7 @@ namespace PharmaMicro.UserIdentityService.Services
                             Token = "",
                         };
                     }
-                    _logger.LogInformation("Registration failed for {request.Email} with Role {request.Role}.", request.Email, request.Role);
+                    _logger.LogInformation("Registration failed for {request.Email}.", request.Email);
                     return new AuthResponse
                     {
                         IsSuccess = false,
@@ -172,32 +169,39 @@ namespace PharmaMicro.UserIdentityService.Services
         /// <param name="role"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentException"></exception>
-        private string CreateUserID(string role)
+        //private string CreateUserID(string role)
+        //{
+        //    string prefix;
+
+        //    switch (role)
+        //    {
+        //        case nameof(Role.PHARMACIST):
+        //            prefix = "PHARM";
+        //            break;
+
+        //        case nameof(Role.ADMIN):
+        //            prefix = "ADM";
+        //            break;
+
+        //        case nameof(Role.MANAGER):
+        //            prefix = "MNGR";
+        //            break;
+
+        //        case nameof(Role.PATIENT):
+        //            prefix = "PAT";
+        //            break;
+
+        //        default:
+        //            throw new ArgumentException("Invalid role");
+        //    }
+        //    int nextNumber = _userManager.Users.Count(u => u.UserId!=null && u.UserId.StartsWith(prefix)) + 1;
+        //    return $"{prefix}{nextNumber}";
+        //}
+        private string CreateUserID()
         {
-            string prefix;
+            string prefix = "PAT";
 
-            switch (role)
-            {
-                case nameof(Role.PHARMACIST):
-                    prefix = "PHARM";
-                    break;
-
-                case nameof(Role.ADMIN):
-                    prefix = "ADM";
-                    break;
-
-                case nameof(Role.MANAGER):
-                    prefix = "MNGR";
-                    break;
-
-                case nameof(Role.PATIENT):
-                    prefix = "PAT";
-                    break;
-
-                default:
-                    throw new ArgumentException("Invalid role");
-            }
-            int nextNumber = _userManager.Users.Count(u => u.UserId!=null && u.UserId.StartsWith(prefix)) + 1;
+            int nextNumber = _userManager.Users.Count(u => u.UserId != null && u.UserId.StartsWith(prefix)) + 1;
             return $"{prefix}{nextNumber}";
         }
     }

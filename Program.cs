@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PharmaMicro.UserIdentityService.Data;
-using PharmaMicro.UserIdentityService.Models;
+using PharmaMicro.UserIdentityService.Models.Users;
 using PharmaMicro.UserIdentityService.Services;
 using PharmaMicro.UserIdentityService.Services.Interface;
 using PharmaMicro.UserIdentityService.Validators;

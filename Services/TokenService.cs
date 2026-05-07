@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using PharmaMicro.UserIdentityService.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using PharmaMicro.UserIdentityService.Services.Interface;
+using PharmaMicro.UserIdentityService.Models.Users;
 
 namespace PharmaMicro.UserIdentityService.Services
 {

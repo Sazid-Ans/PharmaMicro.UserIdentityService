@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using PharmaMicro.UserIdentityService.Models;
+using PharmaMicro.UserIdentityService.Models.Pharmacy;
+using PharmaMicro.UserIdentityService.Models.Users;
 
 namespace PharmaMicro.UserIdentityService.Data
 {
@@ -11,5 +12,8 @@ namespace PharmaMicro.UserIdentityService.Data
     public class AuthDbContext:IdentityDbContext<ApplicationUser>
     {
         public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options) { }
+
+        public DbSet<Pharmacy> Pharmacies { get; set; }
+        public DbSet<PharmacyStaff> PharmacyStaff { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace PharmaMicro.UserIdentityService.Models
+﻿namespace PharmaMicro.UserIdentityService.Models.Pharmacy
 {
     public class PharmacyRegisterRequest
     {
